@@ -10,17 +10,22 @@ app.get("/", (req, res) => {
 });
 
 app.get("/proxy", async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.send("No URL provided");
+  let url = req.query.url;
+  if (!url) return res.send("No URL");
 
   try {
     const response = await fetch(url);
-    const text = await response.text();
-    res.send(text);
+    let body = await response.text();
+
+    // 🔥 rewrite links so they stay inside proxy
+    body = body.replace(/href="\/(.*?)"/g, `href="/proxy?url=${url}/$1"`);
+    body = body.replace(/href="(https?:\/\/.*?)"/g, `href="/proxy?url=$1"`);
+
+    res.send(body);
   } catch (err) {
-    res.send("Error fetching URL");
+    res.send("Error loading site");
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("running on port " + PORT));
+app.listen(PORT, () => console.log("running"));
